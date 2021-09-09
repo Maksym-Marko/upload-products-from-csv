@@ -1,3 +1,44 @@
+// removed posts
+Vue.component( 'mx_removed_posts', {
+
+	props: {
+		repoved_post_ids: {
+			type: Array
+		}
+	},
+
+	template: `
+		<div>
+
+			<h3>Removed Post IDs</h3>
+
+			<p>There was removed {{ repoved_post_ids.length }} items.</p>
+
+			<div
+				class="mx-csv-content-wrapper mx-import-result mx_result_stack"
+			>
+
+				<table>
+
+					<tr>
+						<th>Removed Post IDs</th>
+					</tr>
+
+					<tr
+						v-for="item in repoved_post_ids"
+					>
+						<td>{{ item }}</td>
+					</tr>
+
+				</table>
+
+			</div>
+
+		</div>
+	`
+
+} )
+
 // progress bar
 Vue.component( 'mx_import_complete', {
 
@@ -49,8 +90,7 @@ Vue.component( 'mx_result_csv_import', {
 			<p>There are {{ uploaded_items.length }} items to import</p>
 
 			<div
-				class="mx-csv-content-wrapper mx-import-result"
-				id="mx_result_stack"
+				class="mx-csv-content-wrapper mx-import-result mx_result_stack"
 			>
 
 				<table>
@@ -121,8 +161,7 @@ Vue.component( 'mx_csv_content', {
 			>Confirm data import</button>
 
 			<div
-				class="mx-csv-content-wrapper"
-				id="mx_result_stack"
+				class="mx-csv-content-wrapper mx_result_stack"
 			>
 
 				<table>
@@ -191,13 +230,15 @@ Vue.component( 'mx_csv_content', {
 								data: data,
 								success: function( response ) {
 
+									let post_status = JSON.parse( response )									
+
 									_this.$emit( 'uploaded_item', _this.file_data[_this.item_index] )
 
 									let complete = true
 
-									let post_id = response
+									let post_id = post_status.post_id
 
-									if( response === 'failed' ) {
+									if( post_status.status === 'create failed' ) {
 
 										complete = false
 
@@ -208,7 +249,8 @@ Vue.component( 'mx_csv_content', {
 									_this.$emit( 'import_complete', {
 										id: _this.file_data[_this.item_index]['id'],
 										post_id: post_id,
-										complete: complete										
+										complete: complete,
+										status: post_status.status
 									} )
 
 									_this.item_index += 1
@@ -456,12 +498,17 @@ if( document.getElementById( 'mx_optimizer_app' ) ) {
 			errors: [],
 			progress: false,
 			uploaded_items: [],
-			import_item_coplete: []
+			import_item_coplete: [],
+			csv_post_ids: [],
+			repoved_post_ids: [],
+			posts_count: 0
 		},
 		methods: {
-			setImportComplete( obj ) {
+			setImportComplete( obj ) {				
 
 				this.import_item_coplete.push( obj )
+
+				this.csv_post_ids.push( obj.post_id )
 
 			},
 			setUploadedItems( row ) {
@@ -491,7 +538,92 @@ if( document.getElementById( 'mx_optimizer_app' ) ) {
 
 				}
 				
+			},
+			removeExtraPosts( post_ids ) {
+
+				let _this = this
+
+				// 
+				let data = {
+
+					'action': 'mxmtzc_remove_posts',
+					'nonce': mxutwfc_admin_localize.nonce,
+					'saved_posts': post_ids
+
+				}
+
+				jQuery.ajax( {
+
+					url: mxutwfc_admin_localize.ajaxurl,
+					type: 'POST',
+					data: data,
+					success: function( response ) {
+
+						let removed_posts = JSON.parse( response )
+
+						_this.repoved_post_ids = removed_posts
+						
+					},
+
+					error: function( response ) {
+
+						// console.log( 'error' + response );
+
+					}
+
+				} )						
+
+			},
+			getCountOfPosts() {
+
+				let _this = this
+
+				let data = {
+
+					'action': 'mxmtzc_get_count_posts',
+					'nonce': mxutwfc_admin_localize.nonce
+
+				}
+
+				jQuery.ajax( {
+
+					url: mxutwfc_admin_localize.ajaxurl,
+					type: 'POST',
+					data: data,
+					success: function( response ) {
+
+						_this.posts_count = parseInt( response )
+						
+					},
+
+					error: function( response ) {
+
+						// console.log( 'error' + response );
+
+					}
+
+				} )
+
 			}
+		},
+		watch: {
+
+			posts_count() {
+
+				this.removeExtraPosts( this.csv_post_ids )
+
+			},
+
+			uploaded_items() {
+
+				if( this.uploaded_items.length === this.file_data.length ) {					
+
+					this.getCountOfPosts()
+
+				}
+				
+			}
+
 		}
 
 	} )

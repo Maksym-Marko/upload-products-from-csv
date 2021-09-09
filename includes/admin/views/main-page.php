@@ -1,6 +1,6 @@
 <div class="mx-main-page-text-wrap">
 	
-	<h1><?php echo __( 'Import products', 'mxutwfc-domain' ); ?></h1>
+	<h1><?php echo __( 'Import Products', 'mxutwfc-domain' ); ?></h1>
 
 	<div id="mx_optimizer_app">
 
@@ -50,6 +50,12 @@
 			:uploaded_items="uploaded_items"
 			:import_item_coplete="import_item_coplete"
 		></mx_result_csv_import>
+
+		<!-- Removed post IDS -->
+		<mx_removed_posts
+			v-if="repoved_post_ids.length > 0"
+			:repoved_post_ids="repoved_post_ids"
+		></mx_removed_posts>
 
 	</div>
 
